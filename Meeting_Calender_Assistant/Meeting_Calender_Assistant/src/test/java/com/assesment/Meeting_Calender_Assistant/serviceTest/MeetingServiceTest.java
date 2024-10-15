@@ -77,5 +77,60 @@ public class MeetingServiceTest {
         });
     }
 
- 
+    @Test
+    public void testBookMeeting_conflictException() {
+        // Arrange
+        MeetingRequestDto meetingRequest = new MeetingRequestDto("Team Meeting", Arrays.asList(2L),
+                LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(emp1));
+        when(employeeRepository.findAllById(meetingRequest.getParticipantIds())).thenReturn(Arrays.asList(emp2));
+
+        Meeting existingMeeting = new Meeting(1L, "Existing Meeting", emp2, Arrays.asList(emp2),
+                LocalDateTime.now().plusMinutes(90), LocalDateTime.now().plusMinutes(150));
+
+        when(meetingRepository.findAllByParticipant(2L)).thenReturn(Arrays.asList(existingMeeting));
+
+    }
+
+    @Test
+    public void testFindFreeSlots_successful() {
+        // Arrange
+        List<Meeting> emp1Meetings = Arrays.asList(
+                new Meeting(1L, "Meeting 1", emp1, new ArrayList<>(),
+                        LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2))
+        );
+        List<Meeting> emp2Meetings = Arrays.asList(
+                new Meeting(2L, "Meeting 2", emp2, new ArrayList<>(),
+                        LocalDateTime.now().plusHours(3), LocalDateTime.now().plusHours(4))
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(emp1));
+        when(employeeRepository.findById(2L)).thenReturn(Optional.of(emp2));
+        when(meetingRepository.findAllByOrganizer(emp1)).thenReturn(emp1Meetings);
+        when(meetingRepository.findAllByOrganizer(emp2)).thenReturn(emp2Meetings);
+
+
+    }
+
+    @Test
+    public void testFindConflictingParticipants_successful() {
+        // Arrange
+        MeetingRequestDto meetingRequest = new MeetingRequestDto("Team Meeting", Arrays.asList(2L),
+                LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+
+        when(employeeRepository.findAllById(meetingRequest.getParticipantIds())).thenReturn(Arrays.asList(emp2));
+
+        Meeting existingMeeting = new Meeting(1L, "Existing Meeting", emp2, Arrays.asList(emp2),
+                LocalDateTime.now().plusHours(1), LocalDateTime.now().plusHours(2));
+
+        when(meetingRepository.findAllByParticipant(2L)).thenReturn(Arrays.asList(existingMeeting));
+
+        // Act
+        List<Employee> conflictingParticipants = meetingService.findConflictingParticipants(meetingRequest);
+
+        // Assert
+        assertNotNull(conflictingParticipants);
+
+    }
 }
